@@ -1,191 +1,174 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2113.3">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Times; color: #000000; -webkit-text-stroke: #000000}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Times; color: #000000; -webkit-text-stroke: #000000; min-height: 14.0px}
-    span.s1 {font-kerning: none}
+  <meta charset="UTF-8">
+  <title>COVID Narrative Visualization</title>
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <script src="https://unpkg.com/d3-annotation@2.5.1/d3-annotation.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 40px;
+    }
+    .scene-nav {
+      margin-bottom: 10px;
+    }
+    svg {
+      width: 100%;
+      height: 600px;
+    }
+    .annotation-note-title {
+      font-weight: bold;
+    }
+    .tooltip {
+      position: absolute;
+      text-align: center;
+      padding: 5px;
+      background: lightgray;
+      border-radius: 5px;
+      pointer-events: none;
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
-<p class="p1"><span class="s1">&lt;!DOCTYPE html&gt;</span></p>
-<p class="p1"><span class="s1">&lt;html lang="en"&gt;</span></p>
-<p class="p1"><span class="s1">&lt;head&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;meta charset="UTF-8"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;title&gt;COVID Narrative Visualization&lt;/title&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;script src="https://d3js.org/d3.v5.min.js"&gt;&lt;/script&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;script src="https://unpkg.com/d3-annotation@2.5.1/d3-annotation.min.js"&gt;&lt;/script&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;style&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>body {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>font-family: sans-serif;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>margin: 40px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>.scene-nav {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>margin-bottom: 10px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>svg {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>width: 100%;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>height: 600px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>.annotation-note-title {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>font-weight: bold;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>.tooltip {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>position: absolute;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>text-align: center;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>padding: 5px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>background: lightgray;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>border-radius: 5px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>pointer-events: none;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>font-size: 12px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;/style&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/head&gt;</span></p>
-<p class="p1"><span class="s1">&lt;body&gt;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;h1&gt;COVID-19 Global Summary — January 1, 2021&lt;/h1&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;div class="scene-nav"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;button id="prev"&gt;Previous&lt;/button&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;span id="scene-title"&gt;&lt;/span&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;button id="next"&gt;Next&lt;/button&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;svg id="vis"&gt;&lt;/svg&gt;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;script&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const scenes = [scene1, scene2, scene3];</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>let currentScene = 0;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const svg = d3.select("#vis");</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const width = +svg.attr("width") || 960;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const height = +svg.attr("height") || 600;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const radius = Math.min(width, height) / 3;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>d3.csv("01-01-2021.csv").then(data =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>data.forEach(d =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>d.Confirmed = +d.Confirmed;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>d.Deaths = +d.Deaths;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>d.Population = +d.Population;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>});</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>updateScene();</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>d3.select("#prev").on("click", () =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>currentScene = (currentScene + scenes.length - 1) % scenes.length;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>updateScene();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>});</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>d3.select("#next").on("click", () =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>currentScene = (currentScene + 1) % scenes.length;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>updateScene();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>});</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>function updateScene() {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>svg.selectAll("*").remove();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>tooltip.style("opacity", 0);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>scenes[currentScene](data);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>function scene1(data) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>d3.select("#scene-title").text("Scene 1: Total Confirmed Cases by Country");</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const pie = d3.pie().value(d =&gt; d.Confirmed);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const arc = d3.arc().innerRadius(0).outerRadius(radius);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const color = d3.scaleOrdinal(d3.schemeCategory10);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const g = svg.append("g")</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.attr("transform", `translate(${width / 2}, ${height / 2})`);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const arcs = g.selectAll("arc")</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.data(pie(data.filter(d =&gt; d.Confirmed &gt; 0)))</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.enter().append("g");</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>arcs.append("path")</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.attr("d", arc)</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.attr("fill", d =&gt; color(d.data.Country_Region))</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.on("mouseover", (event, d) =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>tooltip.transition().duration(200).style("opacity", .9);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>tooltip.html(`${d.data.Country_Region}&lt;br&gt;${d.data.Confirmed.toLocaleString()} cases`)</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">              </span>.style("left", (event.pageX) + "px")</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">              </span>.style("top", (event.pageY - 28) + "px");</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>})</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.on("mouseout", () =&gt; tooltip.transition().duration(500).style("opacity", 0));</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>function scene2(data) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>d3.select("#scene-title").text("Scene 2: Incident Rate (Cases per Person)");</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const dataset = data.filter(d =&gt; d.Population &gt; 0).map(d =&gt; ({</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>country: d.Country_Region,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>rate: d.Confirmed / d.Population</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>})).sort((a, b) =&gt; b.rate - a.rate).slice(0, 10);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const x = d3.scaleLinear().domain([0, d3.max(dataset, d =&gt; d.rate)]).range([0, width - 200]);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const y = d3.scaleBand().domain(dataset.map(d =&gt; d.country)).range([50, height - 50]).padding(0.2);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const g = svg.append("g").attr("transform", "translate(100,0)");</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>g.selectAll("rect")</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.data(dataset)</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.enter()</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.append("rect")</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.attr("y", d =&gt; y(d.country))</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.attr("width", d =&gt; x(d.rate))</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.attr("height", y.bandwidth())</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.attr("fill", "steelblue")</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.on("mouseover", (event, d) =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>tooltip.transition().duration(200).style("opacity", .9);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>tooltip.html(`${d.country}&lt;br&gt;Rate: ${(d.rate * 100).toFixed(2)}%`)</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">              </span>.style("left", (event.pageX) + "px")</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">              </span>.style("top", (event.pageY - 28) + "px");</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>})</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.on("mouseout", () =&gt; tooltip.transition().duration(500).style("opacity", 0));</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>g.append("g").call(d3.axisLeft(y));</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>g.append("g").attr("transform", `translate(0, ${height - 50})`).call(d3.axisBottom(x).ticks(5, "%"));</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>function scene3(data) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>d3.select("#scene-title").text("Scene 3: Case Fatality Rate (Deaths per Case)");</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const dataset = data.filter(d =&gt; d.Confirmed &gt; 1000).map(d =&gt; ({</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>country: d.Country_Region,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>rate: d.Deaths / d.Confirmed</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>})).sort((a, b) =&gt; b.rate - a.rate).slice(0, 10);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const x = d3.scaleLinear().domain([0, d3.max(dataset, d =&gt; d.rate)]).range([0, width - 200]);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const y = d3.scaleBand().domain(dataset.map(d =&gt; d.country)).range([50, height - 50]).padding(0.2);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const g = svg.append("g").attr("transform", "translate(100,0)");</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>g.selectAll("rect")</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.data(dataset)</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.enter()</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.append("rect")</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.attr("y", d =&gt; y(d.country))</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.attr("width", d =&gt; x(d.rate))</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.attr("height", y.bandwidth())</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.attr("fill", "darkred")</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.on("mouseover", (event, d) =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>tooltip.transition().duration(200).style("opacity", .9);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>tooltip.html(`${d.country}&lt;br&gt;Fatality Rate: ${(d.rate * 100).toFixed(2)}%`)</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">              </span>.style("left", (event.pageX) + "px")</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">              </span>.style("top", (event.pageY - 28) + "px");</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>})</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>.on("mouseout", () =&gt; tooltip.transition().duration(500).style("opacity", 0));</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>g.append("g").call(d3.axisLeft(y));</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>g.append("g").attr("transform", `translate(0, ${height - 50})`).call(d3.axisBottom(x).ticks(5, "%"));</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>});</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;/script&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/body&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/html&gt;</span></p>
+
+  <h1>COVID-19 Global Summary — January 1, 2021</h1>
+  <div class="scene-nav">
+    <button id="prev">Previous</button>
+    <span id="scene-title"></span>
+    <button id="next">Next</button>
+  </div>
+
+  <svg id="vis"></svg>
+
+  <script>
+    const scenes = [scene1, scene2, scene3];
+    let currentScene = 0;
+
+    const svg = d3.select("#vis");
+    const width = +svg.attr("width") || 960;
+    const height = +svg.attr("height") || 600;
+    const radius = Math.min(width, height) / 3;
+    const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
+
+    d3.csv("01-01-2021.csv").then(data => {
+      data.forEach(d => {
+        d.Confirmed = +d.Confirmed;
+        d.Deaths = +d.Deaths;
+        d.Population = +d.Population;
+      });
+
+      updateScene();
+
+      d3.select("#prev").on("click", () => {
+        currentScene = (currentScene + scenes.length - 1) % scenes.length;
+        updateScene();
+      });
+
+      d3.select("#next").on("click", () => {
+        currentScene = (currentScene + 1) % scenes.length;
+        updateScene();
+      });
+
+      function updateScene() {
+        svg.selectAll("*").remove();
+        tooltip.style("opacity", 0);
+        scenes[currentScene](data);
+      }
+
+      function scene1(data) {
+        d3.select("#scene-title").text("Scene 1: Total Confirmed Cases by Country");
+
+        const pie = d3.pie().value(d => d.Confirmed);
+        const arc = d3.arc().innerRadius(0).outerRadius(radius);
+        const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+        const g = svg.append("g")
+          .attr("transform", `translate(${width / 2}, ${height / 2})`);
+
+        const arcs = g.selectAll("arc")
+          .data(pie(data.filter(d => d.Confirmed > 0)))
+          .enter().append("g");
+
+        arcs.append("path")
+          .attr("d", arc)
+          .attr("fill", d => color(d.data.Country_Region))
+          .on("mouseover", (event, d) => {
+            tooltip.transition().duration(200).style("opacity", .9);
+            tooltip.html(`${d.data.Country_Region}<br>${d.data.Confirmed.toLocaleString()} cases`)
+              .style("left", (event.pageX) + "px")
+              .style("top", (event.pageY - 28) + "px");
+          })
+          .on("mouseout", () => tooltip.transition().duration(500).style("opacity", 0));
+      }
+
+      function scene2(data) {
+        d3.select("#scene-title").text("Scene 2: Incident Rate (Cases per Person)");
+
+        const dataset = data.filter(d => d.Population > 0).map(d => ({
+          country: d.Country_Region,
+          rate: d.Confirmed / d.Population
+        })).sort((a, b) => b.rate - a.rate).slice(0, 10);
+
+        const x = d3.scaleLinear().domain([0, d3.max(dataset, d => d.rate)]).range([0, width - 200]);
+        const y = d3.scaleBand().domain(dataset.map(d => d.country)).range([50, height - 50]).padding(0.2);
+
+        const g = svg.append("g").attr("transform", "translate(100,0)");
+
+        g.selectAll("rect")
+          .data(dataset)
+          .enter()
+          .append("rect")
+          .attr("y", d => y(d.country))
+          .attr("width", d => x(d.rate))
+          .attr("height", y.bandwidth())
+          .attr("fill", "steelblue")
+          .on("mouseover", (event, d) => {
+            tooltip.transition().duration(200).style("opacity", .9);
+            tooltip.html(`${d.country}<br>Rate: ${(d.rate * 100).toFixed(2)}%`)
+              .style("left", (event.pageX) + "px")
+              .style("top", (event.pageY - 28) + "px");
+          })
+          .on("mouseout", () => tooltip.transition().duration(500).style("opacity", 0));
+
+        g.append("g").call(d3.axisLeft(y));
+        g.append("g").attr("transform", `translate(0, ${height - 50})`).call(d3.axisBottom(x).ticks(5, "%"));
+      }
+
+      function scene3(data) {
+        d3.select("#scene-title").text("Scene 3: Case Fatality Rate (Deaths per Case)");
+
+        const dataset = data.filter(d => d.Confirmed > 1000).map(d => ({
+          country: d.Country_Region,
+          rate: d.Deaths / d.Confirmed
+        })).sort((a, b) => b.rate - a.rate).slice(0, 10);
+
+        const x = d3.scaleLinear().domain([0, d3.max(dataset, d => d.rate)]).range([0, width - 200]);
+        const y = d3.scaleBand().domain(dataset.map(d => d.country)).range([50, height - 50]).padding(0.2);
+
+        const g = svg.append("g").attr("transform", "translate(100,0)");
+
+        g.selectAll("rect")
+          .data(dataset)
+          .enter()
+          .append("rect")
+          .attr("y", d => y(d.country))
+          .attr("width", d => x(d.rate))
+          .attr("height", y.bandwidth())
+          .attr("fill", "darkred")
+          .on("mouseover", (event, d) => {
+            tooltip.transition().duration(200).style("opacity", .9);
+            tooltip.html(`${d.country}<br>Fatality Rate: ${(d.rate * 100).toFixed(2)}%`)
+              .style("left", (event.pageX) + "px")
+              .style("top", (event.pageY - 28) + "px");
+          })
+          .on("mouseout", () => tooltip.transition().duration(500).style("opacity", 0));
+
+        g.append("g").call(d3.axisLeft(y));
+        g.append("g").attr("transform", `translate(0, ${height - 50})`).call(d3.axisBottom(x).ticks(5, "%"));
+      }
+    });
+  </script>
 </body>
 </html>
