@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>COVID-19 Narrative Visualization</title>
   <script src="https://d3js.org/d3.v5.min.js"></script>
   <style>
@@ -59,6 +59,7 @@
         d.Recovered = +d.Recovered;
         d.Incident_Rate = +d.Incident_Rate;
         d.Deaths_Per_100k = d.Deaths / (d.Population ? +d.Population : 1) * 100000;
+        d.Population = d.Population ? +d.Population : null; // safe check
       });
 
       // Remove rows with no relevant data
@@ -87,7 +88,7 @@
         .attr("height", height);
 
       if (currentScene === 0) {
-        // Pie chart of global totals
+        // Scene 1: Pie chart of global totals (unchanged)
         const totals = data.reduce((acc, d) => {
           acc.Confirmed += d.Confirmed;
           acc.Deaths += d.Deaths;
@@ -128,8 +129,21 @@
           .text(d => d.data.label);
 
       } else if (currentScene === 1) {
-        // Bar chart of top 10 countries by Incident Rate
-        const top = data.sort((a, b) => b.Incident_Rate - a.Incident_Rate).slice(0, 10);
+        // Scene 2: Bar chart of top 10 countries by Incident Rate, with aggregation
+        const dataByCountry = d3.nest()
+          .key(d => d.Country_Region)
+          .rollup(values => {
+            const Confirmed = d3.sum(values, d => d.Confirmed);
+            const Incident_Rate = d3.mean(values, d => d.Incident_Rate);
+            return { Confirmed, Incident_Rate };
+          })
+          .entries(data)
+          .map(d => ({
+            Country_Region: d.key,
+            ...d.value
+          }));
+
+        const top = dataByCountry.sort((a, b) => b.Incident_Rate - a.Incident_Rate).slice(0, 10);
 
         const x = d3.scaleBand()
           .domain(top.map(d => d.Country_Region))
@@ -164,7 +178,7 @@
           .call(d3.axisLeft(y));
 
       } else if (currentScene === 2) {
-        // Bar chart of top 10 countries by Deaths per 100k
+        // Scene 3: Bar chart of top 10 countries by Deaths per 100k
         const top = data.sort((a, b) => b.Deaths_Per_100k - a.Deaths_Per_100k).slice(0, 10);
 
         const x = d3.scaleBand()
