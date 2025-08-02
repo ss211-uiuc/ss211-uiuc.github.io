@@ -39,18 +39,16 @@
       color: black;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
     }
-    /* Annotation styles */
-    .annotation-box {
-      font-size: 14px;
+    /* Annotation text style - no box */
+    .annotation-text {
       font-weight: bold;
-      background: white;
-      border: 1px solid #999;
-      border-radius: 5px;
-      padding: 8px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      font-size: 14px;
+      fill: #000;
+      stroke: #fff;
+      stroke-width: 1;
+      paint-order: stroke;
       pointer-events: none;
-      fill: #333;
-      cursor: default;
+      user-select: none;
     }
     .annotation-line {
       stroke: black;
@@ -284,46 +282,27 @@
         const usData = topConfirmed.find(d => d.Country === "US" || d.Country === "United States");
 
         if (usData) {
-          // Calculate approx position of US bar
           const usX = x(usData.Country) + x.bandwidth() / 2;
           const usY = y(usData.Confirmed);
 
-          // Annotation group
           const annGroup = svg.append("g");
 
-          // Leader line
           annGroup.append("path")
             .attr("class", "annotation-line")
-            .attr("d", `M${usX},${usY} L${usX + 130},${usY - 70} L${usX + 280},${usY - 70}`);
+            // lowered annotation line y-coords by ~20px so text won't hide behind title
+            .attr("d", `M${usX},${usY} L${usX + 130},${usY - 50} L${usX + 280},${usY - 50}`);
 
-          // Annotation box
-          annGroup.append("rect")
-            .attr("x", usX + 130)
-            .attr("y", usY - 110)
-            .attr("width", 280)
-            .attr("height", 70)
-            .attr("fill", "white")
-            .attr("stroke", "#999")
-            .attr("rx", 5)
-            .attr("ry", 5)
-            .style("filter", "drop-shadow(2px 2px 2px rgba(0,0,0,0.1))");
+          // Two lines of annotation text, no box, styled with class
+          annGroup.append("text")
+            .attr("class", "annotation-text")
+            .attr("x", usX + 140)
+            .attr("y", usY - 30)
+            .text("Despite having a much smaller population, the U.S. had almost twice the number of confirmed cases than India, at 20,397,401.");
 
           annGroup.append("text")
+            .attr("class", "annotation-text")
             .attr("x", usX + 140)
-            .attr("y", usY - 90)
-            .attr("fill", "#000")
-            .style("font-weight", "bold")
-            .style("font-size", "14px")
-            .style("pointer-events", "none")
-            .text("Despite having a much smaller population, the U.S. had almost twice the number of confirmed cases than India");
-
-          annGroup.append("text")
-            .attr("x", usX + 140)
-            .attr("y", usY - 70)
-            .attr("fill", "#000")
-            .style("font-weight", "bold")
-            .style("font-size", "14px")
-            .style("pointer-events", "none")
+            .attr("y", usY - 10)
             .text("at 20,397,401.");
         }
 
@@ -374,51 +353,29 @@
 
         hoverInstruction.text("Please hover your mouse over a section of the data to discover more information.");
 
-        // Annotation for US case fatality ratio
         const us = top.find(d => d.Country_Region === "US" || d.Country_Region === "United States");
 
         if (us) {
-          // Calculate approx position of US bar
           const usX = x(us.Country_Region) + x.bandwidth() / 2;
           const usY = y(us.Case_Fatality_Ratio);
 
-          // Annotation group
           const annGroup = svg.append("g");
 
-          // Leader line
           annGroup.append("path")
             .attr("class", "annotation-line")
-            .attr("d", `M${usX},${usY} L${usX + 120},${usY - 70} L${usX + 270},${usY - 70}`);
-
-          // Annotation box
-          annGroup.append("rect")
-            .attr("x", usX + 120)
-            .attr("y", usY - 110)
-            .attr("width", 270)
-            .attr("height", 70)
-            .attr("fill", "white")
-            .attr("stroke", "#999")
-            .attr("rx", 5)
-            .attr("ry", 5)
-            .style("filter", "drop-shadow(2px 2px 2px rgba(0,0,0,0.1))");
+            .attr("d", `M${usX},${usY} L${usX + 120},${usY - 50} L${usX + 270},${usY - 50}`);
 
           annGroup.append("text")
+            .attr("class", "annotation-text")
             .attr("x", usX + 130)
-            .attr("y", usY - 90)
-            .attr("fill", "#000")
-            .style("font-weight", "bold")
-            .style("font-size", "14px")
-            .style("pointer-events", "none")
+            .attr("y", usY - 30)
             .text("The case fatality ratio in the U.S. was over 5x that of the second highest, Belgium,");
 
           annGroup.append("text")
+            .attr("class", "annotation-text")
             .attr("x", usX + 130)
-            .attr("y", usY - 70)
-            .attr("fill", "#000")
-            .style("font-weight", "bold")
-            .style("font-size", "14px")
-            .style("pointer-events", "none")
-            .text("and significantly higher than anywhere else.");
+            .attr("y", usY - 10)
+            .text("and significantly higher than anywhere else in the world.");
         }
       }
     }
