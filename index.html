@@ -2,181 +2,265 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>COVID Visualization</title>
-  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <title>COVID-19 Narrative Visualization</title>
+  <script src="https://d3js.org/d3.v5.min.js"></script>
   <style>
     body {
-      background-color: #fff8dc;
       font-family: sans-serif;
+      text-align: center;
+      background-color: #fcd56f;
+    }
+    h1 {
+      margin-top: 30px;
+      font-size: 32px;
+    }
+    h2 {
+      font-size: 20px;
+      margin-bottom: 20px;
+    }
+    svg {
+      margin: auto;
+      display: block;
+    }
+    button {
+      margin: 20px 10px;
+      padding: 6px 12px;
     }
     .tooltip {
       position: absolute;
-      opacity: 0;
       background-color: white;
-      border: solid 1px #999;
+      border: 1px solid #ccc;
       border-radius: 5px;
       padding: 8px;
       pointer-events: none;
-      font-size: 12px;
-    }
-    .scene {
-      display: none;
-    }
-    .active {
-      display: block;
-    }
-    .nav {
-      margin: 10px;
-    }
-    .nav button {
-      padding: 10px;
-      margin-right: 5px;
-      cursor: pointer;
+      opacity: 0;
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
-  <div class="nav">
-    <button onclick="showScene(1)">Scene 1</button>
-    <button onclick="showScene(2)">Scene 2</button>
-    <button onclick="showScene(3)">Scene 3</button>
+  <h1>COVID-19 Narrative Visualization</h1>
+  <h2 id="scene-title"></h2>
+
+  <div id="viz"></div>
+
+  <div>
+    <button onclick="prevScene()">Previous</button>
+    <button onclick="nextScene()">Next</button>
   </div>
 
-  <div id="tooltip" class="tooltip"></div>
-
-  <div id="scene1" class="scene active"></div>
-  <div id="scene2" class="scene"></div>
-  <div id="scene3" class="scene"></div>
-
   <script>
-    function showScene(n) {
-      d3.selectAll(".scene").classed("active", false);
-      d3.select("#scene" + n).classed("active", true);
-    }
+    let currentScene = 0;
+    const width = 800;
+    const height = 500;
+    const margin = { top: 50, right: 50, bottom: 100, left: 80 };
 
-    const tooltip = d3.select("#tooltip");
+    const sceneTitles = [
+      "Global Totals",
+      "Top 10 Countries by Incident Rate",
+      "Top 10 Countries by Case Fatality Ratio"
+    ];
 
-    function addTooltip(svg, textAccessor) {
-      return {
-        mouseover: function (event, d) {
-          tooltip.style("opacity", 1);
-        },
-        mousemove: function (event, d) {
-          tooltip
-            .html(textAccessor(d))
-            .style("left", (event.pageX + 15) + "px")
-            .style("top", (event.pageY - 28) + "px");
-        },
-        mouseleave: function () {
-          tooltip.style("opacity", 0);
-        }
-      };
-    }
-
-    const width = 600, height = 400, margin = { top: 40, right: 40, bottom: 60, left: 60 };
-
-    d3.csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/03-01-2023.csv").then(data => {
+    d3.csv("01-01-2021.csv").then(data => {
       data.forEach(d => {
-        d.Confirmed = +d.Confirmed || 0;
-        d.Deaths = +d.Deaths || 0;
-        d.Case_Fatality_Ratio = +d.Case_Fatality_Ratio || 0;
+        d.Confirmed = +d.Confirmed;
+        d.Deaths = +d.Deaths;
+        d.Recovered = +d.Recovered;
+        d.Incident_Rate = +d.Incident_Rate;
+        d.Case_Fatality_Ratio = +d.Case_Fatality_Ratio;
       });
 
-      const grouped = d3.rollups(
-        data,
-        v => ({
-          Confirmed: d3.sum(v, d => d.Confirmed),
-          Deaths: d3.sum(v, d => d.Deaths),
-          Case_Fatality_Ratio: d3.mean(v, d => d.Case_Fatality_Ratio)
-        }),
-        d => d.Country_Region
-      ).map(([Country, values]) => ({ Country, ...values }));
+      data = data.filter(d => d.Confirmed && d.Country_Region);
 
-      // Scene 1: Top 10 countries by confirmed cases
-      const topConfirmed = grouped.sort((a, b) => d3.descending(a.Confirmed, b.Confirmed)).slice(0, 10);
-      const svg1 = d3.select("#scene1").append("svg")
-        .attr("width", width).attr("height", height);
+      renderScene(data);
 
-      const x1 = d3.scaleBand().domain(topConfirmed.map(d => d.Country)).range([margin.left, width - margin.right]).padding(0.1);
-      const y1 = d3.scaleLinear().domain([0, d3.max(topConfirmed, d => d.Confirmed)]).nice().range([height - margin.bottom, margin.top]);
+      window.nextScene = () => {
+        currentScene = (currentScene + 1) % 3;
+        renderScene(data);
+      };
 
-      svg1.append("g")
-        .attr("transform", `translate(0,${height - margin.bottom})`)
-        .call(d3.axisBottom(x1))
-        .selectAll("text")
-        .attr("transform", "rotate(-45)").style("text-anchor", "end");
-
-      svg1.append("g").attr("transform", `translate(${margin.left},0)`).call(d3.axisLeft(y1));
-
-      const tip1 = addTooltip(svg1, d => `<strong>${d.Country}</strong><br/>Confirmed: ${d.Confirmed.toLocaleString()}`);
-
-      svg1.selectAll("rect")
-        .data(topConfirmed)
-        .enter()
-        .append("rect")
-        .attr("x", d => x1(d.Country))
-        .attr("y", d => y1(d.Confirmed))
-        .attr("width", x1.bandwidth())
-        .attr("height", d => y1(0) - y1(d.Confirmed))
-        .attr("fill", "steelblue")
-        .on("mouseover", tip1.mouseover)
-        .on("mousemove", tip1.mousemove)
-        .on("mouseleave", tip1.mouseleave);
-
-      // Scene 2: Pie chart of deaths for top 5 countries
-      const topDeaths = grouped.sort((a, b) => d3.descending(a.Deaths, b.Deaths)).slice(0, 5);
-      const svg2 = d3.select("#scene2").append("svg")
-        .attr("width", width).attr("height", height)
-        .append("g")
-        .attr("transform", `translate(${width / 2}, ${height / 2})`);
-
-      const pie = d3.pie().value(d => d.Deaths);
-      const arc = d3.arc().innerRadius(0).outerRadius(Math.min(width, height) / 2 - 40);
-      const color = d3.scaleOrdinal(d3.schemeCategory10);
-
-      const tip2 = addTooltip(svg2, d => `<strong>${d.data.Country}</strong><br/>Deaths: ${d.data.Deaths.toLocaleString()}`);
-
-      svg2.selectAll("path")
-        .data(pie(topDeaths))
-        .enter()
-        .append("path")
-        .attr("d", arc)
-        .attr("fill", d => color(d.data.Country))
-        .on("mouseover", tip2.mouseover)
-        .on("mousemove", tip2.mousemove)
-        .on("mouseleave", tip2.mouseleave);
-
-      // Scene 3: Top 10 countries by Case Fatality Ratio (CFR)
-      const topCFR = grouped.filter(d => d.Confirmed > 1000).sort((a, b) => d3.descending(a.Case_Fatality_Ratio, b.Case_Fatality_Ratio)).slice(0, 10);
-      const svg3 = d3.select("#scene3").append("svg")
-        .attr("width", width).attr("height", height);
-
-      const x3 = d3.scaleBand().domain(topCFR.map(d => d.Country)).range([margin.left, width - margin.right]).padding(0.1);
-      const y3 = d3.scaleLinear().domain([0, d3.max(topCFR, d => d.Case_Fatality_Ratio)]).nice().range([height - margin.bottom, margin.top]);
-
-      svg3.append("g")
-        .attr("transform", `translate(0,${height - margin.bottom})`)
-        .call(d3.axisBottom(x3))
-        .selectAll("text")
-        .attr("transform", "rotate(-45)").style("text-anchor", "end");
-
-      svg3.append("g").attr("transform", `translate(${margin.left},0)`).call(d3.axisLeft(y3));
-
-      const tip3 = addTooltip(svg3, d => `<strong>${d.Country}</strong><br/>CFR: ${d.Case_Fatality_Ratio.toFixed(2)}%`);
-
-      svg3.selectAll("rect")
-        .data(topCFR)
-        .enter()
-        .append("rect")
-        .attr("x", d => x3(d.Country))
-        .attr("y", d => y3(d.Case_Fatality_Ratio))
-        .attr("width", x3.bandwidth())
-        .attr("height", d => y3(0) - y3(d.Case_Fatality_Ratio))
-        .attr("fill", "tomato")
-        .on("mouseover", tip3.mouseover)
-        .on("mousemove", tip3.mousemove)
-        .on("mouseleave", tip3.mouseleave);
+      window.prevScene = () => {
+        currentScene = (currentScene + 2) % 3;
+        renderScene(data);
+      };
     });
+
+    function renderScene(data) {
+      d3.select("#scene-title").text(sceneTitles[currentScene]);
+      d3.select("#viz").selectAll("*").remove();
+
+      const svg = d3.select("#viz")
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+      const tooltip = d3.select("#viz")
+        .append("div")
+        .attr("class", "tooltip");
+
+      if (currentScene === 0) {
+        const totals = data.reduce((acc, d) => {
+          acc.Confirmed += d.Confirmed;
+          acc.Deaths += d.Deaths;
+          acc.Recovered += d.Recovered;
+          return acc;
+        }, { Confirmed: 0, Deaths: 0, Recovered: 0 });
+
+        const pieData = [
+          { label: "Confirmed", value: totals.Confirmed },
+          { label: "Deaths", value: totals.Deaths },
+          { label: "Recovered", value: totals.Recovered }
+        ];
+
+        const radius = Math.min(width, height) / 2 - 100;
+        const g = svg.append("g")
+          .attr("transform", `translate(${width / 2}, ${height / 2})`);
+
+        const color = d3.scaleOrdinal()
+          .domain(pieData.map(d => d.label))
+          .range(["#1f77b4", "#d62728", "#2ca02c"]);
+
+        const pie = d3.pie().value(d => d.value);
+        const arc = d3.arc().innerRadius(0).outerRadius(radius);
+
+        g.selectAll("path")
+          .data(pie(pieData))
+          .enter()
+          .append("path")
+          .attr("d", arc)
+          .attr("fill", d => color(d.data.label))
+          .on("mouseover", function (event, d) {
+            tooltip.style("opacity", 1);
+          })
+          .on("mousemove", function (event, d) {
+            tooltip
+              .html(`${d.data.label}: ${d.data.value.toLocaleString()}`)
+              .style("left", event.pageX + 10 + "px")
+              .style("top", event.pageY - 28 + "px");
+          })
+          .on("mouseleave", function () {
+            tooltip.style("opacity", 0);
+          });
+
+        g.selectAll("text")
+          .data(pie(pieData))
+          .enter()
+          .append("text")
+          .attr("transform", d => `translate(${arc.centroid(d)})`)
+          .attr("text-anchor", "middle")
+          .text(d => d.data.label);
+
+      } else if (currentScene === 1) {
+        const dataByCountry = d3.nest()
+          .key(d => d.Country_Region)
+          .rollup(values => {
+            const Confirmed = d3.sum(values, d => d.Confirmed);
+            const Incident_Rate = d3.mean(values, d => d.Incident_Rate);
+            return { Confirmed, Incident_Rate };
+          })
+          .entries(data)
+          .map(d => ({
+            Country_Region: d.key,
+            ...d.value
+          }));
+
+        const top = dataByCountry.sort((a, b) => b.Incident_Rate - a.Incident_Rate).slice(0, 10);
+
+        const x = d3.scaleBand()
+          .domain(top.map(d => d.Country_Region))
+          .range([margin.left, width - margin.right])
+          .padding(0.2);
+
+        const y = d3.scaleLinear()
+          .domain([0, d3.max(top, d => d.Incident_Rate)])
+          .nice()
+          .range([height - margin.bottom, margin.top]);
+
+        svg.append("g")
+          .selectAll("rect")
+          .data(top)
+          .enter()
+          .append("rect")
+          .attr("x", d => x(d.Country_Region))
+          .attr("y", d => y(d.Incident_Rate))
+          .attr("width", x.bandwidth())
+          .attr("height", d => height - margin.bottom - y(d.Incident_Rate))
+          .attr("fill", "steelblue")
+          .on("mouseover", function () {
+            tooltip.style("opacity", 1);
+          })
+          .on("mousemove", function (event, d) {
+            tooltip
+              .html(`${d.Country_Region}<br>Incident Rate: ${d.Incident_Rate.toFixed(2)}`)
+              .style("left", event.pageX + 10 + "px")
+              .style("top", event.pageY - 28 + "px");
+          })
+          .on("mouseleave", function () {
+            tooltip.style("opacity", 0);
+          });
+
+        svg.append("g")
+          .attr("transform", `translate(0, ${height - margin.bottom})`)
+          .call(d3.axisBottom(x))
+          .selectAll("text")
+          .attr("transform", "rotate(-40)")
+          .style("text-anchor", "end");
+
+        svg.append("g")
+          .attr("transform", `translate(${margin.left}, 0)`)
+          .call(d3.axisLeft(y));
+
+      } else if (currentScene === 2) {
+        const top = data
+          .filter(d => d.Case_Fatality_Ratio != null)
+          .sort((a, b) => b.Case_Fatality_Ratio - a.Case_Fatality_Ratio)
+          .slice(0, 10);
+
+        const x = d3.scaleBand()
+          .domain(top.map(d => d.Country_Region))
+          .range([margin.left, width - margin.right])
+          .padding(0.2);
+
+        const y = d3.scaleLinear()
+          .domain([0, d3.max(top, d => d.Case_Fatality_Ratio)])
+          .nice()
+          .range([height - margin.bottom, margin.top]);
+
+        svg.append("g")
+          .selectAll("rect")
+          .data(top)
+          .enter()
+          .append("rect")
+          .attr("x", d => x(d.Country_Region))
+          .attr("y", d => y(d.Case_Fatality_Ratio))
+          .attr("width", x.bandwidth())
+          .attr("height", d => height - margin.bottom - y(d.Case_Fatality_Ratio))
+          .attr("fill", "crimson")
+          .on("mouseover", function () {
+            tooltip.style("opacity", 1);
+          })
+          .on("mousemove", function (event, d) {
+            tooltip
+              .html(`${d.Country_Region}<br>Fatality Ratio: ${d.Case_Fatality_Ratio.toFixed(2)}%`)
+              .style("left", event.pageX + 10 + "px")
+              .style("top", event.pageY - 28 + "px");
+          })
+          .on("mouseleave", function () {
+            tooltip.style("opacity", 0);
+          });
+
+        svg.append("g")
+          .attr("transform", `translate(0, ${height - margin.bottom})`)
+          .call(d3.axisBottom(x))
+          .selectAll("text")
+          .attr("transform", "rotate(-40)")
+          .style("text-anchor", "end");
+
+        svg.append("g")
+          .attr("transform", `translate(${margin.left}, 0)`)
+          .call(d3.axisLeft(y));
+      }
+    }
   </script>
 </body>
 </html>
