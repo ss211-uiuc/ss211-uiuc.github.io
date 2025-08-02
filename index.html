@@ -8,7 +8,8 @@
     body {
       font-family: sans-serif;
       text-align: center;
-      background-color: #fcd56f;
+      background-color: #fcd56f; /* warm yellow background */
+      position: relative; /* needed for tooltip absolute positioning */
     }
     h1 {
       margin-top: 30px;
@@ -28,13 +29,14 @@
     }
     .tooltip {
       position: absolute;
+      opacity: 0;
       background-color: white;
-      border: 1px solid #ccc;
+      border: solid 1px #999;
       border-radius: 5px;
       padding: 8px;
       pointer-events: none;
-      opacity: 0;
-      font-size: 14px;
+      font-size: 12px;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
     }
   </style>
 </head>
@@ -49,6 +51,8 @@
     <button onclick="nextScene()">Next</button>
   </div>
 
+  <div id="tooltip" class="tooltip"></div>
+
   <script>
     let currentScene = 0;
     const width = 800;
@@ -61,7 +65,26 @@
       "Top 10 Countries by Case Fatality Ratio"
     ];
 
+    const tooltip = d3.select("#tooltip");
+
+    function addTooltipHandlers(selection, htmlFunc) {
+      selection
+        .on("mouseover", (event, d) => {
+          tooltip.style("opacity", 1);
+        })
+        .on("mousemove", (event, d) => {
+          tooltip
+            .html(htmlFunc(d))
+            .style("left", (event.pageX + 15) + "px")
+            .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseleave", () => {
+          tooltip.style("opacity", 0);
+        });
+    }
+
     d3.csv("01-01-2021.csv").then(data => {
+      // Convert numeric fields
       data.forEach(d => {
         d.Confirmed = +d.Confirmed;
         d.Deaths = +d.Deaths;
@@ -70,6 +93,7 @@
         d.Case_Fatality_Ratio = +d.Case_Fatality_Ratio;
       });
 
+      // Remove rows with no relevant data
       data = data.filter(d => d.Confirmed && d.Country_Region);
 
       renderScene(data);
@@ -94,11 +118,8 @@
         .attr("width", width)
         .attr("height", height);
 
-      const tooltip = d3.select("#viz")
-        .append("div")
-        .attr("class", "tooltip");
-
       if (currentScene === 0) {
+        // Scene 1: Pie chart of global totals
         const totals = data.reduce((acc, d) => {
           acc.Confirmed += d.Confirmed;
           acc.Deaths += d.Deaths;
@@ -123,24 +144,16 @@
         const pie = d3.pie().value(d => d.value);
         const arc = d3.arc().innerRadius(0).outerRadius(radius);
 
-        g.selectAll("path")
+        const arcs = g.selectAll("path")
           .data(pie(pieData))
           .enter()
           .append("path")
           .attr("d", arc)
-          .attr("fill", d => color(d.data.label))
-          .on("mouseover", function (event, d) {
-            tooltip.style("opacity", 1);
-          })
-          .on("mousemove", function (event, d) {
-            tooltip
-              .html(`${d.data.label}: ${d.data.value.toLocaleString()}`)
-              .style("left", event.pageX + 10 + "px")
-              .style("top", event.pageY - 28 + "px");
-          })
-          .on("mouseleave", function () {
-            tooltip.style("opacity", 0);
-          });
+          .attr("fill", d => color(d.data.label));
+
+        addTooltipHandlers(arcs, d =>
+          `<strong>${d.data.label}</strong><br/>${d.data.value.toLocaleString()}`
+        );
 
         g.selectAll("text")
           .data(pie(pieData))
@@ -151,6 +164,7 @@
           .text(d => d.data.label);
 
       } else if (currentScene === 1) {
+        // Scene 2: Bar chart of top 10 countries by Incident Rate (aggregated)
         const dataByCountry = d3.nest()
           .key(d => d.Country_Region)
           .rollup(values => {
@@ -176,7 +190,7 @@
           .nice()
           .range([height - margin.bottom, margin.top]);
 
-        svg.append("g")
+        const bars = svg.append("g")
           .selectAll("rect")
           .data(top)
           .enter()
@@ -185,19 +199,11 @@
           .attr("y", d => y(d.Incident_Rate))
           .attr("width", x.bandwidth())
           .attr("height", d => height - margin.bottom - y(d.Incident_Rate))
-          .attr("fill", "steelblue")
-          .on("mouseover", function () {
-            tooltip.style("opacity", 1);
-          })
-          .on("mousemove", function (event, d) {
-            tooltip
-              .html(`${d.Country_Region}<br>Incident Rate: ${d.Incident_Rate.toFixed(2)}`)
-              .style("left", event.pageX + 10 + "px")
-              .style("top", event.pageY - 28 + "px");
-          })
-          .on("mouseleave", function () {
-            tooltip.style("opacity", 0);
-          });
+          .attr("fill", "steelblue");
+
+        addTooltipHandlers(bars, d =>
+          `<strong>${d.Country_Region}</strong><br/>Incident Rate: ${d.Incident_Rate.toFixed(2)}`
+        );
 
         svg.append("g")
           .attr("transform", `translate(0, ${height - margin.bottom})`)
@@ -211,6 +217,7 @@
           .call(d3.axisLeft(y));
 
       } else if (currentScene === 2) {
+        // Scene 3: Bar chart of top 10 countries by Case Fatality Ratio
         const top = data
           .filter(d => d.Case_Fatality_Ratio != null)
           .sort((a, b) => b.Case_Fatality_Ratio - a.Case_Fatality_Ratio)
@@ -226,7 +233,7 @@
           .nice()
           .range([height - margin.bottom, margin.top]);
 
-        svg.append("g")
+        const bars = svg.append("g")
           .selectAll("rect")
           .data(top)
           .enter()
@@ -235,19 +242,11 @@
           .attr("y", d => y(d.Case_Fatality_Ratio))
           .attr("width", x.bandwidth())
           .attr("height", d => height - margin.bottom - y(d.Case_Fatality_Ratio))
-          .attr("fill", "crimson")
-          .on("mouseover", function () {
-            tooltip.style("opacity", 1);
-          })
-          .on("mousemove", function (event, d) {
-            tooltip
-              .html(`${d.Country_Region}<br>Fatality Ratio: ${d.Case_Fatality_Ratio.toFixed(2)}%`)
-              .style("left", event.pageX + 10 + "px")
-              .style("top", event.pageY - 28 + "px");
-          })
-          .on("mouseleave", function () {
-            tooltip.style("opacity", 0);
-          });
+          .attr("fill", "crimson");
+
+        addTooltipHandlers(bars, d =>
+          `<strong>${d.Country_Region}</strong><br/>Case Fatality Ratio: ${d.Case_Fatality_Ratio.toFixed(2)}%`
+        );
 
         svg.append("g")
           .attr("transform", `translate(0, ${height - margin.bottom})`)
