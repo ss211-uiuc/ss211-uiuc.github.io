@@ -8,7 +8,7 @@
     body {
       font-family: sans-serif;
       text-align: center;
-      background-color: #fcd56f;
+      background-color: #fcd56f; /* warm yellow background */
     }
     h1 {
       margin-top: 30px;
@@ -46,9 +46,9 @@
     const margin = { top: 50, right: 50, bottom: 100, left: 80 };
 
     const sceneTitles = [
-      "Global Totals (Pie Chart)",
+      "Global Totals",
       "Top 10 Countries by Incident Rate",
-      "Top 10 Countries by Deaths per 100k"
+      "Top 10 Countries by Case Fatality Ratio"
     ];
 
     d3.csv("01-01-2021.csv").then(data => {
@@ -58,12 +58,7 @@
         d.Deaths = +d.Deaths;
         d.Recovered = +d.Recovered;
         d.Incident_Rate = +d.Incident_Rate;
-        if (d.Population && d.Deaths != null) {
-          d.Deaths_Per_100k = +d.Deaths / +d.Population * 100000;
-        } else {
-          d.Deaths_Per_100k = null;
-        }
-        d.Population = d.Population ? +d.Population : null; // safe check
+        d.Case_Fatality_Ratio = +d.Case_Fatality_Ratio;
       });
 
       // Remove rows with no relevant data
@@ -92,6 +87,7 @@
         .attr("height", height);
 
       if (currentScene === 0) {
+        // Scene 1: Pie chart of global totals
         const totals = data.reduce((acc, d) => {
           acc.Confirmed += d.Confirmed;
           acc.Deaths += d.Deaths;
@@ -132,6 +128,7 @@
           .text(d => d.data.label);
 
       } else if (currentScene === 1) {
+        // Scene 2: Bar chart of top 10 countries by Incident Rate (aggregated)
         const dataByCountry = d3.nest()
           .key(d => d.Country_Region)
           .rollup(values => {
@@ -180,7 +177,11 @@
           .call(d3.axisLeft(y));
 
       } else if (currentScene === 2) {
-        const top = data.sort((a, b) => b.Deaths_Per_100k - a.Deaths_Per_100k).slice(0, 10);
+        // Scene 3: Bar chart of top 10 countries by Case Fatality Ratio
+        const top = data
+          .filter(d => d.Case_Fatality_Ratio != null)
+          .sort((a, b) => b.Case_Fatality_Ratio - a.Case_Fatality_Ratio)
+          .slice(0, 10);
 
         const x = d3.scaleBand()
           .domain(top.map(d => d.Country_Region))
@@ -188,7 +189,7 @@
           .padding(0.2);
 
         const y = d3.scaleLinear()
-          .domain([0, d3.max(top, d => d.Deaths_Per_100k)])
+          .domain([0, d3.max(top, d => d.Case_Fatality_Ratio)])
           .nice()
           .range([height - margin.bottom, margin.top]);
 
@@ -198,9 +199,9 @@
           .enter()
           .append("rect")
           .attr("x", d => x(d.Country_Region))
-          .attr("y", d => y(d.Deaths_Per_100k))
+          .attr("y", d => y(d.Case_Fatality_Ratio))
           .attr("width", x.bandwidth())
-          .attr("height", d => height - margin.bottom - y(d.Deaths_Per_100k))
+          .attr("height", d => height - margin.bottom - y(d.Case_Fatality_Ratio))
           .attr("fill", "crimson");
 
         svg.append("g")
