@@ -8,7 +8,7 @@
     body {
       font-family: sans-serif;
       text-align: center;
-      background-color: #fcb603;
+      background-color: #fcd56f;
     }
     h1 {
       margin-top: 30px;
@@ -176,7 +176,10 @@
           .call(d3.axisLeft(y));
 
       } else if (currentScene === 2) {
-        const top = data.sort((a, b) => b.Deaths_Per_100k - a.Deaths_Per_100k).slice(0, 10);
+        const top = data
+          .filter(d => d.Deaths_Per_100k !== null)
+          .sort((a, b) => b.Deaths_Per_100k - a.Deaths_Per_100k)
+          .slice(0, 10);
 
         const x = d3.scaleBand()
           .domain(top.map(d => d.Country_Region))
