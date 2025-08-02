@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>COVID-19 Narrative Visualization</title>
-  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
   <style>
     body {
       font-family: sans-serif;
@@ -62,7 +62,7 @@
 
     const sceneTitles = [
       "Global Totals",
-      "Top 10 Countries by Incident Rate",
+      "Top 10 Countries by Confirmed Cases",
       "Top 10 Countries by Case Fatality Ratio"
     ];
 
@@ -88,15 +88,15 @@
     d3.csv("01-01-2021.csv").then(data => {
       // Convert numeric fields
       data.forEach(d => {
-        d.Confirmed = +d.Confirmed;
-        d.Deaths = +d.Deaths;
-        d.Recovered = +d.Recovered;
-        d.Incident_Rate = +d.Incident_Rate;
-        d.Case_Fatality_Ratio = +d.Case_Fatality_Ratio;
+        d.Confirmed = +d.Confirmed || 0;
+        d.Deaths = +d.Deaths || 0;
+        d.Recovered = +d.Recovered || 0;
+        d.Incident_Rate = +d.Incident_Rate || 0;
+        d.Case_Fatality_Ratio = +d.Case_Fatality_Ratio || 0;
       });
 
       // Remove rows with no relevant data
-      data = data.filter(d => d.Confirmed && d.Country_Region);
+      data = data.filter(d => d.Country_Region);
 
       renderScene(data);
 
@@ -121,7 +121,7 @@
         .attr("height", height);
 
       if (currentScene === 0) {
-        // Scene 1: Pie chart of global totals
+        // Scene 1: Pie chart of global totals (with fixed outside labels + tooltips)
         const totals = data.reduce((acc, d) => {
           acc.Confirmed += d.Confirmed;
           acc.Deaths += d.Deaths;
@@ -135,9 +135,10 @@
           { label: "Recovered", value: totals.Recovered }
         ];
 
-        const radius = Math.min(width, height) / 2 - 100;
-        const g = svg.append("g")
+        const g1 = svg.append("g")
           .attr("transform", `translate(${width / 2}, ${height / 2})`);
+
+        const radius = Math.min(width, height) / 2 - 80;
 
         const color = d3.scaleOrdinal()
           .domain(pieData.map(d => d.label))
@@ -145,132 +146,150 @@
 
         const pie = d3.pie().value(d => d.value);
         const arc = d3.arc().innerRadius(0).outerRadius(radius);
+        const arcLabel = d3.arc().innerRadius(radius * 1.1).outerRadius(radius * 1.1);
 
-        const paths = g.selectAll("path")
+        const paths = g1.selectAll("path")
           .data(pie(pieData))
           .enter()
           .append("path")
           .attr("d", arc)
-          .attr("fill", d => color(d.data.label));
+          .attr("fill", d => color(d.data.label))
+          .attr("stroke", "white")
+          .attr("stroke-width", 2);
 
-        const tip = addTooltip(svg, d => `<strong>${d.data.label}</strong><br/>${d.data.value.toLocaleString()}`);
+        const tip1 = addTooltip(svg, d => `<strong>${d.data.label}</strong><br/>${d.data.value.toLocaleString()}`);
 
         paths
-          .on("mouseover", tip.mouseover)
-          .on("mousemove", tip.mousemove)
-          .on("mouseleave", tip.mouseleave);
+          .on("mouseover", tip1.mouseover)
+          .on("mousemove", tip1.mousemove)
+          .on("mouseleave", tip1.mouseleave);
 
-        g.selectAll("text")
+        // Leader lines from slice to labels
+        g1.selectAll("polyline")
+          .data(pie(pieData))
+          .enter()
+          .append("polyline")
+          .attr("stroke", "black")
+          .attr("stroke-width", 1)
+          .attr("fill", "none")
+          .attr("points", d => {
+            const posA = arc.centroid(d);
+            const posB = arcLabel.centroid(d);
+            const posC = [posB[0] + (posB[0] > 0 ? 20 : -20), posB[1]];
+            return [posA, posB, posC];
+          });
+
+        // Outside labels
+        g1.selectAll("text")
           .data(pie(pieData))
           .enter()
           .append("text")
-          .attr("transform", d => `translate(${arc.centroid(d)})`)
-          .attr("text-anchor", "middle")
+          .attr("transform", d => {
+            const pos = arcLabel.centroid(d);
+            const x = pos[0] + (pos[0] > 0 ? 20 : -20);
+            return `translate(${x},${pos[1]})`;
+          })
+          .attr("text-anchor", d => (arcLabel.centroid(d)[0] > 0 ? "start" : "end"))
           .style("font-weight", "bold")
-          .style("fill", "white")
+          .style("font-size", "14px")
+          .style("fill", "#000")
+          .style("text-shadow", "1px 1px 0 #fff")
           .text(d => d.data.label);
 
       } else if (currentScene === 1) {
-        // Scene 2: Bar chart of top 10 countries by Incident Rate (aggregated)
-        const dataByCountry = d3.nest()
-          .key(d => d.Country_Region)
-          .rollup(values => {
-            const Confirmed = d3.sum(values, d => d.Confirmed);
-            const Incident_Rate = d3.mean(values, d => d.Incident_Rate);
-            return { Confirmed, Incident_Rate };
-          })
-          .entries(data)
-          .map(d => ({
-            Country_Region: d.key,
-            ...d.value
-          }));
+        // Scene 2: Bar chart of top 10 countries by confirmed cases
+        const grouped = d3.rollups(
+          data,
+          v => ({
+            Confirmed: d3.sum(v, d => d.Confirmed),
+          }),
+          d => d.Country_Region
+        ).map(([Country, values]) => ({ Country, ...values }));
 
-        const top = dataByCountry.sort((a, b) => b.Incident_Rate - a.Incident_Rate).slice(0, 10);
+        const topConfirmed = grouped.sort((a, b) => d3.descending(a.Confirmed, b.Confirmed)).slice(0, 10);
 
         const x = d3.scaleBand()
-          .domain(top.map(d => d.Country_Region))
+          .domain(topConfirmed.map(d => d.Country))
           .range([margin.left, width - margin.right])
-          .padding(0.2);
+          .padding(0.1);
 
         const y = d3.scaleLinear()
-          .domain([0, d3.max(top, d => d.Incident_Rate)])
+          .domain([0, d3.max(topConfirmed, d => d.Confirmed)])
           .nice()
           .range([height - margin.bottom, margin.top]);
 
-        const bars = svg.append("g")
-          .selectAll("rect")
-          .data(top)
-          .enter()
-          .append("rect")
-          .attr("x", d => x(d.Country_Region))
-          .attr("y", d => y(d.Incident_Rate))
-          .attr("width", x.bandwidth())
-          .attr("height", d => height - margin.bottom - y(d.Incident_Rate))
-          .attr("fill", "steelblue");
-
-        const tip = addTooltip(svg, d => `<strong>${d.Country_Region}</strong><br/>Incident Rate: ${d.Incident_Rate.toFixed(2)}`);
-
-        bars
-          .on("mouseover", tip.mouseover)
-          .on("mousemove", tip.mousemove)
-          .on("mouseleave", tip.mouseleave);
-
         svg.append("g")
-          .attr("transform", `translate(0, ${height - margin.bottom})`)
+          .attr("transform", `translate(0,${height - margin.bottom})`)
           .call(d3.axisBottom(x))
           .selectAll("text")
-          .attr("transform", "rotate(-40)")
+          .attr("transform", "rotate(-45)")
           .style("text-anchor", "end");
 
         svg.append("g")
-          .attr("transform", `translate(${margin.left}, 0)`)
+          .attr("transform", `translate(${margin.left},0)`)
           .call(d3.axisLeft(y));
+
+        const bars = svg.selectAll("rect")
+          .data(topConfirmed)
+          .enter()
+          .append("rect")
+          .attr("x", d => x(d.Country))
+          .attr("y", d => y(d.Confirmed))
+          .attr("width", x.bandwidth())
+          .attr("height", d => y(0) - y(d.Confirmed))
+          .attr("fill", "steelblue");
+
+        const tip2 = addTooltip(svg, d => `<strong>${d.Country}</strong><br/>Confirmed: ${d.Confirmed.toLocaleString()}`);
+
+        bars
+          .on("mouseover", tip2.mouseover)
+          .on("mousemove", tip2.mousemove)
+          .on("mouseleave", tip2.mouseleave);
 
       } else if (currentScene === 2) {
         // Scene 3: Bar chart of top 10 countries by Case Fatality Ratio
         const top = data
-          .filter(d => d.Case_Fatality_Ratio != null)
+          .filter(d => d.Case_Fatality_Ratio != null && d.Case_Fatality_Ratio > 0)
           .sort((a, b) => b.Case_Fatality_Ratio - a.Case_Fatality_Ratio)
           .slice(0, 10);
 
         const x = d3.scaleBand()
           .domain(top.map(d => d.Country_Region))
           .range([margin.left, width - margin.right])
-          .padding(0.2);
+          .padding(0.1);
 
         const y = d3.scaleLinear()
           .domain([0, d3.max(top, d => d.Case_Fatality_Ratio)])
           .nice()
           .range([height - margin.bottom, margin.top]);
 
-        const bars = svg.append("g")
-          .selectAll("rect")
+        svg.append("g")
+          .attr("transform", `translate(0, ${height - margin.bottom})`)
+          .call(d3.axisBottom(x))
+          .selectAll("text")
+          .attr("transform", "rotate(-45)")
+          .style("text-anchor", "end");
+
+        svg.append("g")
+          .attr("transform", `translate(${margin.left}, 0)`)
+          .call(d3.axisLeft(y));
+
+        const bars = svg.selectAll("rect")
           .data(top)
           .enter()
           .append("rect")
           .attr("x", d => x(d.Country_Region))
           .attr("y", d => y(d.Case_Fatality_Ratio))
           .attr("width", x.bandwidth())
-          .attr("height", d => height - margin.bottom - y(d.Case_Fatality_Ratio))
+          .attr("height", d => y(0) - y(d.Case_Fatality_Ratio))
           .attr("fill", "crimson");
 
-        const tip = addTooltip(svg, d => `<strong>${d.Country_Region}</strong><br/>CFR: ${d.Case_Fatality_Ratio.toFixed(2)}%`);
+        const tip3 = addTooltip(svg, d => `<strong>${d.Country_Region}</strong><br/>CFR: ${d.Case_Fatality_Ratio.toFixed(2)}%`);
 
         bars
-          .on("mouseover", tip.mouseover)
-          .on("mousemove", tip.mousemove)
-          .on("mouseleave", tip.mouseleave);
-
-        svg.append("g")
-          .attr("transform", `translate(0, ${height - margin.bottom})`)
-          .call(d3.axisBottom(x))
-          .selectAll("text")
-          .attr("transform", "rotate(-40)")
-          .style("text-anchor", "end");
-
-        svg.append("g")
-          .attr("transform", `translate(${margin.left}, 0)`)
-          .call(d3.axisLeft(y));
+          .on("mouseover", tip3.mouseover)
+          .on("mousemove", tip3.mousemove)
+          .on("mouseleave", tip3.mouseleave);
       }
     }
   </script>
