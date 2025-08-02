@@ -8,7 +8,7 @@
     body {
       font-family: sans-serif;
       text-align: center;
-      background-color: #fcd56f; /* warm yellow background */
+      background-color: #fcd56f;
     }
     h1 {
       margin-top: 30px;
@@ -39,7 +39,7 @@
       color: black;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
     }
-    /* Annotation text style - no box */
+    /* Annotation text style */
     .annotation-text {
       font-weight: bold;
       font-size: 14px;
@@ -149,7 +149,7 @@
         .attr("height", height);
 
       if (currentScene === 0) {
-        // Scene 1: Pie chart of global totals (with fixed outside labels + tooltips)
+        // Scene 1: Pie chart of global totals
         const totals = data.reduce((acc, d) => {
           acc.Confirmed += d.Confirmed;
           acc.Deaths += d.Deaths;
@@ -289,21 +289,20 @@
 
           annGroup.append("path")
             .attr("class", "annotation-line")
-            // lowered annotation line y-coords by ~20px so text won't hide behind title
-            .attr("d", `M${usX},${usY} L${usX + 130},${usY - 50} L${usX + 280},${usY - 50}`);
+            .attr("d", `M${usX},${usY} L${usX + 90},${usY - 40} L${usX + 190},${usY - 40}`);
 
           // Two lines of annotation text, no box, styled with class
           annGroup.append("text")
             .attr("class", "annotation-text")
-            .attr("x", usX + 140)
-            .attr("y", usY - 30)
-            .text("Despite having a much smaller population, the U.S. had almost twice the number of confirmed cases than India, at 20,397,401.");
+            .attr("x", usX + 100)
+            .attr("y", usY - 25)
+            .text("Despite having a much smaller population, the U.S. had almost twice");
 
           annGroup.append("text")
             .attr("class", "annotation-text")
-            .attr("x", usX + 140)
+            .attr("x", usX + 100)
             .attr("y", usY - 10)
-            .text("at 20,397,401.");
+            .text("the number of confirmed cases than India at 20,397,401.");
         }
 
       } else if (currentScene === 2) {
@@ -363,17 +362,17 @@
 
           annGroup.append("path")
             .attr("class", "annotation-line")
-            .attr("d", `M${usX},${usY} L${usX + 120},${usY - 50} L${usX + 270},${usY - 50}`);
+            .attr("d", `M${usX},${usY} L${usX + 90},${usY - 40} L${usX + 190},${usY - 40}`);
 
           annGroup.append("text")
             .attr("class", "annotation-text")
-            .attr("x", usX + 130)
-            .attr("y", usY - 30)
+            .attr("x", usX + 100)
+            .attr("y", usY - 25)
             .text("The case fatality ratio in the U.S. was over 5x that of the second highest, Belgium,");
 
           annGroup.append("text")
             .attr("class", "annotation-text")
-            .attr("x", usX + 130)
+            .attr("x", usX + 100)
             .attr("y", usY - 10)
             .text("and significantly higher than anywhere else in the world.");
         }
