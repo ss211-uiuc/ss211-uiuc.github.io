@@ -58,8 +58,12 @@
         d.Deaths = +d.Deaths;
         d.Recovered = +d.Recovered;
         d.Incident_Rate = +d.Incident_Rate;
-        d.Population = d.Population ? +d.Population : null;
-        d.Deaths_Per_100k = d.Population ? +d.Deaths / +d.Population * 100000 : null;
+        if (d.Population && d.Deaths != null) {
+          d.Deaths_Per_100k = +d.Deaths / +d.Population * 100000;
+        } else {
+          d.Deaths_Per_100k = null;
+        }
+        d.Population = d.Population ? +d.Population : null; // safe check
       });
 
       // Remove rows with no relevant data
@@ -176,10 +180,7 @@
           .call(d3.axisLeft(y));
 
       } else if (currentScene === 2) {
-        const top = data
-          .filter(d => d.Deaths_Per_100k !== null)
-          .sort((a, b) => b.Deaths_Per_100k - a.Deaths_Per_100k)
-          .slice(0, 10);
+        const top = data.sort((a, b) => b.Deaths_Per_100k - a.Deaths_Per_100k).slice(0, 10);
 
         const x = d3.scaleBand()
           .domain(top.map(d => d.Country_Region))
