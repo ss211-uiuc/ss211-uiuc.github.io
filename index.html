@@ -39,6 +39,33 @@
       color: black;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
     }
+    /* Annotation styles */
+    .annotation-box {
+      font-size: 14px;
+      font-weight: bold;
+      background: white;
+      border: 1px solid #999;
+      border-radius: 5px;
+      padding: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      pointer-events: none;
+      fill: #333;
+      cursor: default;
+    }
+    .annotation-line {
+      stroke: black;
+      stroke-width: 1.5;
+      fill: none;
+    }
+    #hover-instruction {
+      margin-top: 10px;
+      font-style: italic;
+      font-size: 14px;
+      color: #333;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
   </style>
 </head>
 <body>
@@ -46,6 +73,7 @@
   <h2 id="scene-title"></h2>
 
   <div id="viz"></div>
+  <div id="hover-instruction"></div>
 
   <div>
     <button onclick="prevScene()">Previous</button>
@@ -67,6 +95,7 @@
     ];
 
     const tooltip = d3.select("#tooltip");
+    const hoverInstruction = d3.select("#hover-instruction");
 
     function addTooltip(svg, textAccessor) {
       return {
@@ -114,6 +143,7 @@
     function renderScene(data) {
       d3.select("#scene-title").text(sceneTitles[currentScene]);
       d3.select("#viz").selectAll("*").remove();
+      hoverInstruction.text("");
 
       const svg = d3.select("#viz")
         .append("svg")
@@ -196,6 +226,8 @@
           .style("text-shadow", "1px 1px 0 #fff")
           .text(d => d.data.label);
 
+        hoverInstruction.text("Please hover your mouse over a section of the data to discover more information.");
+
       } else if (currentScene === 1) {
         // Scene 2: Bar chart of top 10 countries by confirmed cases
         const grouped = d3.rollups(
@@ -246,6 +278,55 @@
           .on("mousemove", tip2.mousemove)
           .on("mouseleave", tip2.mouseleave);
 
+        hoverInstruction.text("Please hover your mouse over a section of the data to discover more information.");
+
+        // Annotation for US confirmed cases
+        const usData = topConfirmed.find(d => d.Country === "US" || d.Country === "United States");
+
+        if (usData) {
+          // Calculate approx position of US bar
+          const usX = x(usData.Country) + x.bandwidth() / 2;
+          const usY = y(usData.Confirmed);
+
+          // Annotation group
+          const annGroup = svg.append("g");
+
+          // Leader line
+          annGroup.append("path")
+            .attr("class", "annotation-line")
+            .attr("d", `M${usX},${usY} L${usX + 130},${usY - 70} L${usX + 280},${usY - 70}`);
+
+          // Annotation box
+          annGroup.append("rect")
+            .attr("x", usX + 130)
+            .attr("y", usY - 110)
+            .attr("width", 280)
+            .attr("height", 70)
+            .attr("fill", "white")
+            .attr("stroke", "#999")
+            .attr("rx", 5)
+            .attr("ry", 5)
+            .style("filter", "drop-shadow(2px 2px 2px rgba(0,0,0,0.1))");
+
+          annGroup.append("text")
+            .attr("x", usX + 140)
+            .attr("y", usY - 90)
+            .attr("fill", "#000")
+            .style("font-weight", "bold")
+            .style("font-size", "14px")
+            .style("pointer-events", "none")
+            .text("Despite having a much smaller population, the U.S. had almost twice the number of confirmed cases than India");
+
+          annGroup.append("text")
+            .attr("x", usX + 140)
+            .attr("y", usY - 70)
+            .attr("fill", "#000")
+            .style("font-weight", "bold")
+            .style("font-size", "14px")
+            .style("pointer-events", "none")
+            .text("at 20,397,401.");
+        }
+
       } else if (currentScene === 2) {
         // Scene 3: Bar chart of top 10 countries by Case Fatality Ratio
         const top = data
@@ -290,6 +371,55 @@
           .on("mouseover", tip3.mouseover)
           .on("mousemove", tip3.mousemove)
           .on("mouseleave", tip3.mouseleave);
+
+        hoverInstruction.text("Please hover your mouse over a section of the data to discover more information.");
+
+        // Annotation for US case fatality ratio
+        const us = top.find(d => d.Country_Region === "US" || d.Country_Region === "United States");
+
+        if (us) {
+          // Calculate approx position of US bar
+          const usX = x(us.Country_Region) + x.bandwidth() / 2;
+          const usY = y(us.Case_Fatality_Ratio);
+
+          // Annotation group
+          const annGroup = svg.append("g");
+
+          // Leader line
+          annGroup.append("path")
+            .attr("class", "annotation-line")
+            .attr("d", `M${usX},${usY} L${usX + 120},${usY - 70} L${usX + 270},${usY - 70}`);
+
+          // Annotation box
+          annGroup.append("rect")
+            .attr("x", usX + 120)
+            .attr("y", usY - 110)
+            .attr("width", 270)
+            .attr("height", 70)
+            .attr("fill", "white")
+            .attr("stroke", "#999")
+            .attr("rx", 5)
+            .attr("ry", 5)
+            .style("filter", "drop-shadow(2px 2px 2px rgba(0,0,0,0.1))");
+
+          annGroup.append("text")
+            .attr("x", usX + 130)
+            .attr("y", usY - 90)
+            .attr("fill", "#000")
+            .style("font-weight", "bold")
+            .style("font-size", "14px")
+            .style("pointer-events", "none")
+            .text("The case fatality ratio in the U.S. was over 5x that of the second highest, Belgium,");
+
+          annGroup.append("text")
+            .attr("x", usX + 130)
+            .attr("y", usY - 70)
+            .attr("fill", "#000")
+            .style("font-weight", "bold")
+            .style("font-size", "14px")
+            .style("pointer-events", "none")
+            .text("and significantly higher than anywhere else.");
+        }
       }
     }
   </script>
