@@ -8,7 +8,7 @@
     body {
       font-family: sans-serif;
       text-align: center;
-      background-color: #fff8dc; /* warm yellow background */
+      background-color: #fcb603;
     }
     h1 {
       margin-top: 30px;
@@ -58,8 +58,8 @@
         d.Deaths = +d.Deaths;
         d.Recovered = +d.Recovered;
         d.Incident_Rate = +d.Incident_Rate;
-        d.Deaths_Per_100k = d.Deaths / (d.Population ? +d.Population : 1) * 100000;
-        d.Population = d.Population ? +d.Population : null; // safe check
+        d.Population = d.Population ? +d.Population : null;
+        d.Deaths_Per_100k = d.Population ? +d.Deaths / +d.Population * 100000 : null;
       });
 
       // Remove rows with no relevant data
