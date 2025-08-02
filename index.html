@@ -2,217 +2,216 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>COVID-19 Narrative Visualization</title>
-  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <title>COVID Narrative Visualization</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
     body {
       font-family: sans-serif;
-      text-align: center;
-      background-color: #f9f9f9;
+      background-color: #fff3b0;
+      margin: 20px;
     }
-    h1 {
-      margin-top: 30px;
-      font-size: 32px;
+
+    .scene {
+      display: none;
     }
-    h2 {
-      font-size: 20px;
-      margin-bottom: 20px;
-    }
-    svg {
-      margin: auto;
+
+    .active {
       display: block;
     }
+
+    svg {
+      margin-top: 20px;
+      background-color: #fff;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+    }
+
     button {
-      margin: 20px 10px;
+      margin-right: 10px;
+      margin-bottom: 10px;
       padding: 6px 12px;
+      background-color: #ffe680;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #ffdf60;
     }
   </style>
 </head>
 <body>
-  <h1>COVID-19 Narrative Visualization</h1>
-  <h2 id="scene-title"></h2>
-
-  <div id="viz"></div>
-
+  <h1>COVID Narrative Visualization</h1>
   <div>
-    <button onclick="prevScene()">Previous</button>
-    <button onclick="nextScene()">Next</button>
+    <button onclick="showScene(1)">Scene 1: Pie Chart</button>
+    <button onclick="showScene(2)">Scene 2: Top 10 Deaths/100k</button>
+    <button onclick="showScene(3)">Scene 3: Scatterplot</button>
   </div>
 
+  <div id="scene1" class="scene"></div>
+  <div id="scene2" class="scene"></div>
+  <div id="scene3" class="scene"></div>
+
   <script>
-    let currentScene = 0;
-    const width = 800;
-    const height = 500;
-    const margin = { top: 50, right: 50, bottom: 100, left: 80 };
+    let data;
 
-    const sceneTitles = [
-      "Global Totals (Pie Chart)",
-      "Top 10 Countries by Incident Rate",
-      "Top 10 Countries by Deaths per 100k"
-    ];
-
-    d3.csv("01-01-2021.csv").then(data => {
-      // Convert numeric fields
+    d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world_covid.csv").then(raw => {
+      data = raw;
       data.forEach(d => {
         d.Confirmed = +d.Confirmed;
         d.Deaths = +d.Deaths;
         d.Recovered = +d.Recovered;
         d.Incident_Rate = +d.Incident_Rate;
-        d.Deaths_Per_100k = d.Population ? (d.Deaths / +d.Population * 100000) : 0;
-        d.Population = d.Population ? +d.Population : null;
+
+        const pop = parseFloat(d.Population);
+        d.Population = isNaN(pop) ? null : pop;
+
+        d.Deaths_Per_100k = d.Population ? (d.Deaths / d.Population * 100000) : 0;
       });
 
-      // Remove rows with no relevant data
-      data = data.filter(d => d.Confirmed && d.Country_Region);
-
-      renderScene(data);
-
-      window.nextScene = () => {
-        currentScene = (currentScene + 1) % 3;
-        renderScene(data);
-      };
-
-      window.prevScene = () => {
-        currentScene = (currentScene + 2) % 3;
-        renderScene(data);
-      };
+      showScene(1);
     });
 
-    function renderScene(data) {
-      d3.select("#scene-title").text(sceneTitles[currentScene]);
-      d3.select("#viz").selectAll("*").remove();
+    function showScene(n) {
+      d3.selectAll('.scene').classed('active', false);
+      d3.select('#scene' + n).classed('active', true);
 
-      const svg = d3.select("#viz")
-        .append("svg")
-        .attr("width", width)
-        .attr("height", height);
+      if (n === 1) drawScene1();
+      if (n === 2) drawScene2();
+      if (n === 3) drawScene3();
+    }
 
-      if (currentScene === 0) {
-        // Scene 1: Pie chart of global totals (unchanged)
-        const totals = data.reduce((acc, d) => {
-          acc.Confirmed += d.Confirmed;
-          acc.Deaths += d.Deaths;
-          acc.Recovered += d.Recovered;
-          return acc;
-        }, { Confirmed: 0, Deaths: 0, Recovered: 0 });
+    function drawScene1() {
+      const svg = d3.select('#scene1').html('').append('svg')
+        .attr('width', 500)
+        .attr('height', 500)
+        .append('g')
+        .attr('transform', 'translate(250,250)');
 
-        const pieData = [
-          { label: "Confirmed", value: totals.Confirmed },
-          { label: "Deaths", value: totals.Deaths },
-          { label: "Recovered", value: totals.Recovered }
-        ];
+      const us = data.find(d => d.Country_Region === 'US');
+      const pieData = [
+        { label: 'Confirmed', value: us.Confirmed },
+        { label: 'Deaths', value: us.Deaths },
+        { label: 'Recovered', value: us.Recovered }
+      ];
 
-        const radius = Math.min(width, height) / 2 - 100;
-        const g = svg.append("g")
-          .attr("transform", `translate(${width / 2}, ${height / 2})`);
+      const pie = d3.pie().value(d => d.value);
+      const arc = d3.arc().innerRadius(0).outerRadius(150);
+      const color = d3.scaleOrdinal(d3.schemeCategory10);
 
-        const color = d3.scaleOrdinal()
-          .domain(pieData.map(d => d.label))
-          .range(["#1f77b4", "#d62728", "#2ca02c"]);
+      svg.selectAll('path')
+        .data(pie(pieData))
+        .enter()
+        .append('path')
+        .attr('d', arc)
+        .attr('fill', (d, i) => color(i));
 
-        const pie = d3.pie().value(d => d.value);
-        const arc = d3.arc().innerRadius(0).outerRadius(radius);
+      svg.selectAll('text')
+        .data(pie(pieData))
+        .enter()
+        .append('text')
+        .text(d => d.data.label)
+        .attr('transform', d => `translate(${arc.centroid(d)})`)
+        .style('text-anchor', 'middle')
+        .style('fill', 'white');
+    }
 
-        g.selectAll("path")
-          .data(pie(pieData))
-          .enter()
-          .append("path")
-          .attr("d", arc)
-          .attr("fill", d => color(d.data.label));
+    function drawScene2() {
+      const margin = { top: 30, right: 30, bottom: 50, left: 60 },
+        width = 600 - margin.left - margin.right,
+        height = 400 - margin.top - margin.bottom;
 
-        g.selectAll("text")
-          .data(pie(pieData))
-          .enter()
-          .append("text")
-          .attr("transform", d => `translate(${arc.centroid(d)})`)
-          .attr("text-anchor", "middle")
-          .text(d => d.data.label);
+      const svg = d3.select('#scene2').html('').append('svg')
+        .attr('width', width + margin.left + margin.right)
+        .attr('height', height + margin.top + margin.bottom)
+        .append('g')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
 
-      } else if (currentScene === 1) {
-        // Scene 2: Bar chart of top 10 countries by Incident Rate, with aggregation
-        const dataByCountry = d3.nest()
-          .key(d => d.Country_Region)
-          .rollup(values => {
-            const Confirmed = d3.sum(values, d => d.Confirmed);
-            const Incident_Rate = d3.mean(values, d => d.Incident_Rate);
-            return { Confirmed, Incident_Rate };
-          })
-          .entries(data)
-          .map(d => ({
-            Country_Region: d.key,
-            ...d.value
-          }));
+      const top = [...data].sort((a, b) => b.Deaths_Per_100k - a.Deaths_Per_100k).slice(0, 10);
 
-        const top = dataByCountry.sort((a, b) => b.Incident_Rate - a.Incident_Rate).slice(0, 10);
+      const x = d3.scaleBand()
+        .domain(top.map(d => d.Country_Region))
+        .range([0, width])
+        .padding(0.2);
 
-        const x = d3.scaleBand()
-          .domain(top.map(d => d.Country_Region))
-          .range([margin.left, width - margin.right])
-          .padding(0.2);
+      const y = d3.scaleLinear()
+        .domain([0, d3.max(top, d => d.Deaths_Per_100k)])
+        .nice()
+        .range([height, 0]);
 
-        const y = d3.scaleLinear()
-          .domain([0, d3.max(top, d => d.Incident_Rate)])
-          .nice()
-          .range([height - margin.bottom, margin.top]);
+      svg.append('g')
+        .attr('transform', `translate(0,${height})`)
+        .call(d3.axisBottom(x))
+        .selectAll("text")
+        .attr("transform", "rotate(-40)")
+        .style("text-anchor", "end");
 
-        svg.append("g")
-          .selectAll("rect")
-          .data(top)
-          .enter()
-          .append("rect")
-          .attr("x", d => x(d.Country_Region))
-          .attr("y", d => y(d.Incident_Rate))
-          .attr("width", x.bandwidth())
-          .attr("height", d => height - margin.bottom - y(d.Incident_Rate))
-          .attr("fill", "steelblue");
+      svg.append('g')
+        .call(d3.axisLeft(y));
 
-        svg.append("g")
-          .attr("transform", `translate(0, ${height - margin.bottom})`)
-          .call(d3.axisBottom(x))
-          .selectAll("text")
-          .attr("transform", "rotate(-40)")
-          .style("text-anchor", "end");
+      svg.selectAll('rect')
+        .data(top)
+        .enter()
+        .append('rect')
+        .attr('x', d => x(d.Country_Region))
+        .attr('y', d => y(d.Deaths_Per_100k))
+        .attr('width', x.bandwidth())
+        .attr('height', d => height - y(d.Deaths_Per_100k))
+        .attr('fill', 'steelblue');
+    }
 
-        svg.append("g")
-          .attr("transform", `translate(${margin.left}, 0)`)
-          .call(d3.axisLeft(y));
+    function drawScene3() {
+      const margin = { top: 30, right: 30, bottom: 50, left: 60 },
+        width = 600 - margin.left - margin.right,
+        height = 400 - margin.top - margin.bottom;
 
-      } else if (currentScene === 2) {
-        // Scene 3: Bar chart of top 10 countries by Deaths per 100k
-        const top = data.sort((a, b) => b.Deaths_Per_100k - a.Deaths_Per_100k).slice(0, 10);
+      const svg = d3.select('#scene3').html('').append('svg')
+        .attr('width', width + margin.left + margin.right)
+        .attr('height', height + margin.top + margin.bottom)
+        .append('g')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
 
-        const x = d3.scaleBand()
-          .domain(top.map(d => d.Country_Region))
-          .range([margin.left, width - margin.right])
-          .padding(0.2);
+      const x = d3.scaleLinear()
+        .domain([0, d3.max(data, d => d.Incident_Rate)])
+        .nice()
+        .range([0, width]);
 
-        const y = d3.scaleLinear()
-          .domain([0, d3.max(top, d => d.Deaths_Per_100k)])
-          .nice()
-          .range([height - margin.bottom, margin.top]);
+      const y = d3.scaleLinear()
+        .domain([0, d3.max(data, d => d.Deaths_Per_100k)])
+        .nice()
+        .range([height, 0]);
 
-        svg.append("g")
-          .selectAll("rect")
-          .data(top)
-          .enter()
-          .append("rect")
-          .attr("x", d => x(d.Country_Region))
-          .attr("y", d => y(d.Deaths_Per_100k))
-          .attr("width", x.bandwidth())
-          .attr("height", d => height - margin.bottom - y(d.Deaths_Per_100k))
-          .attr("fill", "crimson");
+      svg.append('g')
+        .attr('transform', `translate(0,${height})`)
+        .call(d3.axisBottom(x));
 
-        svg.append("g")
-          .attr("transform", `translate(0, ${height - margin.bottom})`)
-          .call(d3.axisBottom(x))
-          .selectAll("text")
-          .attr("transform", "rotate(-40)")
-          .style("text-anchor", "end");
+      svg.append('g')
+        .call(d3.axisLeft(y));
 
-        svg.append("g")
-          .attr("transform", `translate(${margin.left}, 0)`)
-          .call(d3.axisLeft(y));
-      }
+      svg.append('text')
+        .attr('x', width / 2)
+        .attr('y', height + 40)
+        .style('text-anchor', 'middle')
+        .text('Incident Rate');
+
+      svg.append('text')
+        .attr('transform', 'rotate(-90)')
+        .attr('x', -height / 2)
+        .attr('y', -45)
+        .style('text-anchor', 'middle')
+        .text('Deaths per 100k');
+
+      svg.selectAll('circle')
+        .data(data)
+        .enter()
+        .append('circle')
+        .attr('cx', d => x(d.Incident_Rate))
+        .attr('cy', d => y(d.Deaths_Per_100k))
+        .attr('r', 3)
+        .attr('fill', 'orange')
+        .attr('opacity', 0.7);
     }
   </script>
 </body>
