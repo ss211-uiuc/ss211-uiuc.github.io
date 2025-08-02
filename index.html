@@ -58,8 +58,8 @@
         d.Deaths = +d.Deaths;
         d.Recovered = +d.Recovered;
         d.Incident_Rate = +d.Incident_Rate;
-        d.Deaths_Per_100k = d.Deaths / (d.Population ? +d.Population : 1) * 100000;
-        d.Population = d.Population ? +d.Population : null; // safe check
+        d.Deaths_Per_100k = d.Population ? (d.Deaths / +d.Population * 100000) : 0;
+        d.Population = d.Population ? +d.Population : null;
       });
 
       // Remove rows with no relevant data
