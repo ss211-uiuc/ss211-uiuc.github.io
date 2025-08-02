@@ -26,7 +26,6 @@
       margin: 20px 10px;
       padding: 6px 12px;
     }
-    /* Tooltip styles */
     #tooltip {
       position: absolute;
       opacity: 0;
@@ -39,7 +38,6 @@
       color: black;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
     }
-    /* Annotation text style */
     .annotation-text {
       font-weight: bold;
       font-size: 14px;
@@ -64,6 +62,26 @@
       margin-left: auto;
       margin-right: auto;
     }
+    #scene-indicator {
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+    .scene-box {
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+      line-height: 30px;
+      margin: 0 5px;
+      border: 2px solid #ccc;
+      border-radius: 5px;
+      background-color: #fff8d6;
+      font-weight: normal;
+    }
+    .scene-box.active {
+      border: 2px solid #333;
+      font-weight: bold;
+      background-color: #ffe08a;
+    }
   </style>
 </head>
 <body>
@@ -72,6 +90,12 @@
 
   <div id="viz"></div>
   <div id="hover-instruction"></div>
+
+  <div id="scene-indicator">
+    <span class="scene-box" id="scene-box-0">1</span>
+    <span class="scene-box" id="scene-box-1">2</span>
+    <span class="scene-box" id="scene-box-2">3</span>
+  </div>
 
   <div>
     <button onclick="prevScene()">Previous</button>
@@ -113,7 +137,6 @@
     }
 
     d3.csv("01-01-2021.csv").then(data => {
-      // Convert numeric fields
       data.forEach(d => {
         d.Confirmed = +d.Confirmed || 0;
         d.Deaths = +d.Deaths || 0;
@@ -122,7 +145,6 @@
         d.Case_Fatality_Ratio = +d.Case_Fatality_Ratio || 0;
       });
 
-      // Remove rows with no relevant data
       data = data.filter(d => d.Country_Region);
 
       renderScene(data);
@@ -138,10 +160,22 @@
       };
     });
 
+    function updateSceneIndicator() {
+      for (let i = 0; i < 3; i++) {
+        const box = document.getElementById(`scene-box-${i}`);
+        if (i === currentScene) {
+          box.classList.add("active");
+        } else {
+          box.classList.remove("active");
+        }
+      }
+    }
+
     function renderScene(data) {
       d3.select("#scene-title").text(sceneTitles[currentScene]);
       d3.select("#viz").selectAll("*").remove();
       hoverInstruction.text("");
+      updateSceneIndicator();
 
       const svg = d3.select("#viz")
         .append("svg")
@@ -149,7 +183,6 @@
         .attr("height", height);
 
       if (currentScene === 0) {
-        // Scene 1: Pie chart of global totals
         const totals = data.reduce((acc, d) => {
           acc.Confirmed += d.Confirmed;
           acc.Deaths += d.Deaths;
@@ -192,7 +225,6 @@
           .on("mousemove", tip1.mousemove)
           .on("mouseleave", tip1.mouseleave);
 
-        // Leader lines from slice to labels
         g1.selectAll("polyline")
           .data(pie(pieData))
           .enter()
@@ -207,7 +239,6 @@
             return [posA, posB, posC];
           });
 
-        // Outside labels
         g1.selectAll("text")
           .data(pie(pieData))
           .enter()
@@ -227,12 +258,9 @@
         hoverInstruction.text("Please hover your mouse over a section of the data to discover more information.");
 
       } else if (currentScene === 1) {
-        // Scene 2: Bar chart of top 10 countries by confirmed cases
         const grouped = d3.rollups(
           data,
-          v => ({
-            Confirmed: d3.sum(v, d => d.Confirmed),
-          }),
+          v => ({ Confirmed: d3.sum(v, d => d.Confirmed) }),
           d => d.Country_Region
         ).map(([Country, values]) => ({ Country, ...values }));
 
@@ -278,7 +306,6 @@
 
         hoverInstruction.text("Please hover your mouse over a section of the data to discover more information.");
 
-        // Annotation for US confirmed cases
         const usData = topConfirmed.find(d => d.Country === "US" || d.Country === "United States");
 
         if (usData) {
@@ -291,7 +318,6 @@
             .attr("class", "annotation-line")
             .attr("d", `M${usX},${usY} L${usX + 20},${usY - 20} L${usX + 90},${usY - 20}`);
 
-          // Two lines of annotation text, no box, styled with class
           annGroup.append("text")
             .attr("class", "annotation-text")
             .attr("x", usX + 100)
@@ -306,7 +332,6 @@
         }
 
       } else if (currentScene === 2) {
-        // Scene 3: Bar chart of top 10 countries by Case Fatality Ratio
         const top = data
           .filter(d => d.Case_Fatality_Ratio != null && d.Case_Fatality_Ratio > 0)
           .sort((a, b) => b.Case_Fatality_Ratio - a.Case_Fatality_Ratio)
